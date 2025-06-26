@@ -1,5 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, MapPin, ChefHat, Navigation, X } from 'lucide-react';
+
+// 使用 CDN 的圖示，因為 lucide-react 可能在部署時有問題
+const ChefHatIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+    <line x1="6" y1="17" x2="18" y2="17"/>
+  </svg>
+);
+
+const NavigationIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="3,11 22,2 13,21 11,13 3,11"/>
+  </svg>
+);
+
+const MapPinIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+    <circle cx="12" cy="10" r="3"/>
+  </svg>
+);
+
+const RefreshIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23,4 23,10 17,10"/>
+    <polyline points="1,20 1,14 7,14"/>
+    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+  </svg>
+);
 
 const FoodRecommendationApp = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -43,6 +71,8 @@ const FoodRecommendationApp = () => {
           case error.TIMEOUT:
             errorMessage = '取得位置資訊逾時';
             break;
+          default:
+            errorMessage = '位置服務發生錯誤';
         }
         setLocationError(errorMessage);
         setIsGettingLocation(false);
@@ -60,7 +90,7 @@ const FoodRecommendationApp = () => {
     getUserLocation();
   }, []);
 
-  // 問題設定 - 新增食材偏好
+  // 問題設定
   const questions = [
     {
       id: 'flavor',
@@ -98,7 +128,7 @@ const FoodRecommendationApp = () => {
     }
   ];
 
-  // 擴充的食物資料庫 - 根據食材分類
+  // 擴充的食物資料庫
   const foodDatabase = {
     light: {
       noodles: {
@@ -169,7 +199,6 @@ const FoodRecommendationApp = () => {
     if (currentStep < questions.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // 所有問題回答完畢，推薦食物
       recommendFood(newPreferences);
     }
   };
@@ -233,7 +262,7 @@ const FoodRecommendationApp = () => {
       <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
         <div className="text-center">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Navigation className="w-8 h-8 text-blue-600" />
+            <NavigationIcon />
           </div>
           <h3 className="text-lg font-semibold text-gray-800 mb-2">
             需要位置權限
@@ -265,13 +294,15 @@ const FoodRecommendationApp = () => {
       <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 text-white text-center">
-          <ChefHat className="w-12 h-12 mx-auto mb-2" />
+          <div className="w-12 h-12 mx-auto mb-2">
+            <ChefHatIcon />
+          </div>
           <h1 className="text-2xl font-bold">美食推薦助手</h1>
           <p className="text-orange-100 mt-1">讓我們幫你決定今天吃什麼！</p>
           
           {/* 位置狀態顯示 */}
           <div className="mt-3 flex items-center justify-center gap-2">
-            <Navigation className="w-4 h-4" />
+            <NavigationIcon />
             <span className={`text-sm ${getLocationStatusColor()}`}>
               {getLocationStatusText()}
             </span>
@@ -332,7 +363,9 @@ const FoodRecommendationApp = () => {
               <div className="mb-6">
                 <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-red-400 
                                rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ChefHat className="w-10 h-10 text-white" />
+                  <div className="w-10 h-10 text-white">
+                    <ChefHatIcon />
+                  </div>
                 </div>
                 <h2 className="text-xl font-semibold text-gray-800 mb-2">
                   為你推薦
@@ -352,7 +385,7 @@ const FoodRecommendationApp = () => {
                            bg-green-500 hover:bg-green-600 text-white 
                            py-3 px-6 rounded-xl font-medium transition-colors duration-200"
                 >
-                  <MapPin className="w-5 h-5" />
+                  <MapPinIcon />
                   {userLocation ? '搜尋附近餐廳' : '在Google地圖搜尋'}
                 </button>
 
@@ -362,7 +395,7 @@ const FoodRecommendationApp = () => {
                            bg-orange-500 hover:bg-orange-600 text-white 
                            py-3 px-6 rounded-xl font-medium transition-colors duration-200"
                 >
-                  <RefreshCw className="w-5 h-5" />
+                  <RefreshIcon />
                   重新推薦
                 </button>
 
@@ -396,7 +429,7 @@ const FoodRecommendationApp = () => {
                 {/* 位置資訊提示 */}
                 {userLocation && (
                   <div className="flex items-center justify-center gap-1 text-sm text-green-600 mt-2">
-                    <Navigation className="w-4 h-4" />
+                    <NavigationIcon />
                     <span>將搜尋您附近的餐廳</span>
                   </div>
                 )}
