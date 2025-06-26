@@ -1,0 +1,415 @@
+import React, { useState, useEffect } from 'react';
+import { RefreshCw, MapPin, ChefHat, Navigation, X } from 'lucide-react';
+
+const FoodRecommendationApp = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [preferences, setPreferences] = useState({});
+  const [currentFood, setCurrentFood] = useState(null);
+  const [isComplete, setIsComplete] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+
+  // 取得使用者位置
+  const getUserLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('您的瀏覽器不支援地理位置功能');
+      return;
+    }
+
+    setIsGettingLocation(true);
+    setLocationError(null);
+    setShowLocationModal(false);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        });
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        let errorMessage = '無法取得位置資訊';
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = '位置存取被拒絕，請允許存取位置以獲得更精準的餐廳推薦';
+            setShowLocationModal(true);
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = '位置資訊無法取得';
+            break;
+          case error.TIMEOUT:
+            errorMessage = '取得位置資訊逾時';
+            break;
+        }
+        setLocationError(errorMessage);
+        setIsGettingLocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000
+      }
+    );
+  };
+
+  // 在元件載入時嘗試取得位置
+  useEffect(() => {
+    getUserLocation();
+  }, []);
+
+  // 問題設定 - 新增食材偏好
+  const questions = [
+    {
+      id: 'flavor',
+      question: '你想吃清淡的還是重口味的？',
+      options: [
+        { value: 'light', label: '清淡' },
+        { value: 'heavy', label: '重口味' }
+      ]
+    },
+    {
+      id: 'base',
+      question: '你想吃麵類還是飯類？',
+      options: [
+        { value: 'noodles', label: '麵類' },
+        { value: 'rice', label: '飯類' }
+      ]
+    },
+    {
+      id: 'style',
+      question: '你想要湯的還是乾的？',
+      options: [
+        { value: 'soup', label: '湯的' },
+        { value: 'dry', label: '乾的' }
+      ]
+    },
+    {
+      id: 'ingredient',
+      question: '你今天特別想吃什麼食材？',
+      options: [
+        { value: 'meat', label: '肉類' },
+        { value: 'seafood', label: '海鮮' },
+        { value: 'vegetable', label: '蔬食' },
+        { value: 'mixed', label: '什麼都好' }
+      ]
+    }
+  ];
+
+  // 擴充的食物資料庫 - 根據食材分類
+  const foodDatabase = {
+    light: {
+      noodles: {
+        soup: {
+          meat: ['雞絲湯麵', '瘦肉青菜麵', '雞湯細麵', '清燉牛肉麵', '白切雞湯麵'],
+          seafood: ['蛤蜊湯麵', '鮮蝦湯麵', '魚片湯麵', '海鮮清湯麵', '蟹肉湯麵'],
+          vegetable: ['青菜蛋花麵', '素食湯麵', '菇菇湯麵', '豆腐青菜麵', '紫菜蛋花麵'],
+          mixed: ['綜合湯麵', '什錦湯麵', '家常湯麵', '營養湯麵', '招牌湯麵']
+        },
+        dry: {
+          meat: ['雞絲拌麵', '肉絲炒麵', '白切雞拌麵', '清炒肉絲麵', '雞肉義大利麵'],
+          seafood: ['蝦仁炒麵', '海鮮義大利麵', '蟹肉拌麵', '鮭魚義大利麵', '蛤蜊義大利麵'],
+          vegetable: ['陽春麵', '蔬菜炒麵', '素食拌麵', '青醬義大利麵', '菇菇炒麵'],
+          mixed: ['什錦炒麵', '綜合拌麵', '家常炒麵', '招牌乾麵', '白醬義大利麵']
+        }
+      },
+      rice: {
+        soup: {
+          meat: ['雞肉粥', '瘦肉粥', '白切雞湯', '清燉排骨湯', '雞絲粥'],
+          seafood: ['蛤蜊粥', '海鮮粥', '魚片粥', '蝦仁粥', '鮭魚粥'],
+          vegetable: ['白粥配菜', '蔬菜粥', '菇菇粥', '青菜豆腐湯', '素食粥'],
+          mixed: ['綜合粥', '什錦粥', '營養粥', '家常粥', '招牌粥']
+        },
+        dry: {
+          meat: ['白飯配雞肉', '蒸蛋飯', '雞肉飯', '日式雞肉定食', '清蒸肉飯'],
+          seafood: ['鮭魚飯', '蝦仁飯', '海鮮蒸蛋飯', '日式鮭魚定食', '蛤蜊飯'],
+          vegetable: ['白飯配菜', '蔬食便當', '素食飯', '蒸蛋飯', '菇菇飯'],
+          mixed: ['什錦炒飯', '綜合便當', '家常飯', '營養便當', '招牌飯']
+        }
+      }
+    },
+    heavy: {
+      noodles: {
+        soup: {
+          meat: ['牛肉麵', '豚骨拉麵', '叉燒拉麵', '紅燒牛肉麵', '麻辣牛肉麵'],
+          seafood: ['海鮮拉麵', '辣味海鮮麵', '蒜蓉海鮮麵', '韓式海鮮麵', '泰式酸辣海鮮麵'],
+          vegetable: ['麻辣湯麵', '韓式泡菜麵', '味噌拉麵', '素食麻辣麵', '辣味蔬菜麵'],
+          mixed: ['酸辣湯麵', '什錦拉麵', '招牌牛肉麵', '麻辣什錦麵', '韓式拌麵湯']
+        },
+        dry: {
+          meat: ['炸醬麵', '肉燥乾麵', '叉燒拌麵', '麻辣乾拌牛肉麵', '韓式烤肉拌麵'],
+          seafood: ['海鮮炒麵', 'XO醬海鮮麵', '辣炒海鮮麵', '蒜蓉海鮮炒麵', '泰式海鮮炒麵'],
+          vegetable: ['麻辣乾麵', '韓式泡菜炒麵', '椒麻乾拌麵', '素食炸醬麵', '辣味蔬菜炒麵'],
+          mixed: ['椒麻乾拌麵', '什錦炒麵', '招牌乾拌麵', '麻辣什錦乾麵', '義大利肉醬麵']
+        }
+      },
+      rice: {
+        soup: {
+          meat: ['麻辣鍋', '韓式泡菜鍋', '酸菜白肉鍋', '麻油雞湯', '羊肉爐'],
+          seafood: ['海鮮鍋', '泰式酸辣海鮮湯', '韓式海鮮豆腐鍋', '麻辣海鮮鍋', '咖哩海鮮鍋'],
+          vegetable: ['麻辣豆腐鍋', '韓式泡菜豆腐鍋', '素食麻辣鍋', '咖哩蔬菜鍋', '麻辣菇菇鍋'],
+          mixed: ['什錦火鍋', '綜合麻辣鍋', '招牌鍋物', '麻辣什錦鍋', '韓式部隊鍋']
+        },
+        dry: {
+          meat: ['滷肉飯', '叉燒飯', '韓式烤肉飯', '咖哩牛肉飯', '麻婆豆腐飯'],
+          seafood: ['海鮮炒飯', '咖哩海鮮飯', '泰式海鮮炒飯', 'XO醬海鮮飯', '韓式海鮮拌飯'],
+          vegetable: ['麻婆豆腐飯', '韓式泡菜炒飯', '咖哩蔬菜飯', '麻辣豆腐飯', '素食拌飯'],
+          mixed: ['咖哩飯', '什錦炒飯', '韓式拌飯', '招牌炒飯', '麻辣什錦飯']
+        }
+      }
+    }
+  };
+
+  const handleAnswer = (questionId, answer) => {
+    const newPreferences = { ...preferences, [questionId]: answer };
+    setPreferences(newPreferences);
+    
+    if (currentStep < questions.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      // 所有問題回答完畢，推薦食物
+      recommendFood(newPreferences);
+    }
+  };
+
+  const recommendFood = (prefs) => {
+    const foods = foodDatabase[prefs.flavor][prefs.base][prefs.style][prefs.ingredient];
+    const randomFood = foods[Math.floor(Math.random() * foods.length)];
+    setCurrentFood(randomFood);
+    setIsComplete(true);
+  };
+
+  const rerollFood = () => {
+    recommendFood(preferences);
+  };
+
+  const searchOnGoogleMaps = () => {
+    let query = encodeURIComponent(currentFood + ' 餐廳');
+    let url = `https://www.google.com/maps/search/${query}`;
+    
+    if (userLocation) {
+      url += `/@${userLocation.latitude},${userLocation.longitude},15z`;
+    }
+    
+    window.open(url, '_blank');
+  };
+
+  const restart = () => {
+    setCurrentStep(0);
+    setPreferences({});
+    setCurrentFood(null);
+    setIsComplete(false);
+  };
+
+  const getLocationStatusText = () => {
+    if (isGettingLocation) return '正在取得位置...';
+    if (userLocation) return '已取得您的位置';
+    if (locationError) return '位置未取得';
+    return '位置未取得';
+  };
+
+  const getLocationStatusColor = () => {
+    if (isGettingLocation) return 'text-blue-600';
+    if (userLocation) return 'text-green-600';
+    if (locationError) return 'text-orange-600';
+    return 'text-gray-500';
+  };
+
+  const getIngredientLabel = (value) => {
+    const labels = {
+      meat: '肉類',
+      seafood: '海鮮',
+      vegetable: '蔬食',
+      mixed: '什麼都好'
+    };
+    return labels[value] || value;
+  };
+
+  // 位置授權模態視窗
+  const LocationModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Navigation className="w-8 h-8 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            需要位置權限
+          </h3>
+          <p className="text-gray-600 mb-6 text-sm">
+            允許存取您的位置，我們就能幫您找到附近最棒的餐廳！您的位置資訊不會被儲存。
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowLocationModal(false)}
+              className="flex-1 py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+            >
+              稍後再說
+            </button>
+            <button
+              onClick={getUserLocation}
+              className="flex-1 py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+            >
+              允許存取
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 p-4">
+      <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 text-white text-center">
+          <ChefHat className="w-12 h-12 mx-auto mb-2" />
+          <h1 className="text-2xl font-bold">美食推薦助手</h1>
+          <p className="text-orange-100 mt-1">讓我們幫你決定今天吃什麼！</p>
+          
+          {/* 位置狀態顯示 */}
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <Navigation className="w-4 h-4" />
+            <span className={`text-sm ${getLocationStatusColor()}`}>
+              {getLocationStatusText()}
+            </span>
+            {!userLocation && !isGettingLocation && (
+              <button
+                onClick={() => setShowLocationModal(true)}
+                className="ml-2 text-xs bg-white bg-opacity-20 px-2 py-1 rounded hover:bg-opacity-30 transition-colors"
+              >
+                授權
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6">
+          {!isComplete ? (
+            // 問答階段
+            <div className="text-center">
+              <div className="mb-6">
+                <div className="flex justify-center mb-4">
+                  {questions.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-3 h-3 rounded-full mx-1 ${
+                        index <= currentStep ? 'bg-orange-500' : 'bg-gray-200'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="text-sm text-gray-500 mb-2">
+                  第 {currentStep + 1} 題，共 {questions.length} 題
+                </p>
+              </div>
+
+              <h2 className="text-xl font-semibold text-gray-800 mb-6">
+                {questions[currentStep].question}
+              </h2>
+
+              <div className="space-y-3">
+                {questions[currentStep].options.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleAnswer(questions[currentStep].id, option.value)}
+                    className="w-full py-4 px-6 bg-gray-50 hover:bg-orange-100 
+                             border-2 border-transparent hover:border-orange-300
+                             rounded-xl transition-all duration-200 
+                             text-gray-700 hover:text-orange-700 font-medium
+                             transform hover:scale-105"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            // 結果階段
+            <div className="text-center">
+              <div className="mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-red-400 
+                               rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ChefHat className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                  為你推薦
+                </h2>
+                <div className="bg-gradient-to-r from-orange-100 to-red-100 
+                               rounded-xl p-4 mb-6">
+                  <p className="text-2xl font-bold text-orange-700">
+                    {currentFood}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={searchOnGoogleMaps}
+                  className="w-full flex items-center justify-center gap-2 
+                           bg-green-500 hover:bg-green-600 text-white 
+                           py-3 px-6 rounded-xl font-medium transition-colors duration-200"
+                >
+                  <MapPin className="w-5 h-5" />
+                  {userLocation ? '搜尋附近餐廳' : '在Google地圖搜尋'}
+                </button>
+
+                <button
+                  onClick={rerollFood}
+                  className="w-full flex items-center justify-center gap-2 
+                           bg-orange-500 hover:bg-orange-600 text-white 
+                           py-3 px-6 rounded-xl font-medium transition-colors duration-200"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  重新推薦
+                </button>
+
+                <button
+                  onClick={restart}
+                  className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 
+                           py-3 px-6 rounded-xl font-medium transition-colors duration-200"
+                >
+                  重新開始
+                </button>
+              </div>
+
+              {/* 顯示選擇的偏好 */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <p className="text-sm text-gray-500 mb-2">你的選擇：</p>
+                <div className="flex flex-wrap gap-2 justify-center mb-3">
+                  <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
+                    {preferences.flavor === 'light' ? '清淡' : '重口味'}
+                  </span>
+                  <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
+                    {preferences.base === 'noodles' ? '麵類' : '飯類'}
+                  </span>
+                  <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
+                    {preferences.style === 'soup' ? '湯的' : '乾的'}
+                  </span>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                    {getIngredientLabel(preferences.ingredient)}
+                  </span>
+                </div>
+                
+                {/* 位置資訊提示 */}
+                {userLocation && (
+                  <div className="flex items-center justify-center gap-1 text-sm text-green-600 mt-2">
+                    <Navigation className="w-4 h-4" />
+                    <span>將搜尋您附近的餐廳</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 位置授權模態視窗 */}
+      {showLocationModal && <LocationModal />}
+    </div>
+  );
+};
+
+export default FoodRecommendationApp;
